@@ -838,6 +838,8 @@ function LoginModal({ onClose, onOpenRegister, onOpenForgot }) {
 
 function ForgotPasswordModal({ onClose, onOpenLogin }) {
   const [email, setEmail] = useState('');
+  const [dob, setDob] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -850,12 +852,45 @@ function ForgotPasswordModal({ onClose, onOpenLogin }) {
     try {
       const trimmedEmail = email.trim();
       
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(trimmedEmail);
+      const { data, error: fetchError } = await supabase
+        .from('registrations')
+        .select('password')
+        .ilike('email', trimmedEmail)
+        .eq('date_of_birth', dob)
+        .single();
 
-      if (resetError) {
-        throw resetError;
+      if (fetchError || !data) {
+        throw new Error("Invalid Email or Date of Birth.");
       }
 
+      const oldPassword = data.password;
+
+      await supabase.auth.signOut();
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: trimmedEmail,
+        password: oldPassword
+      });
+
+      if (signInError) {
+        throw new Error("Cannot verify your previous credentials. Please contact support.");
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      await supabase
+        .from('registrations')
+        .update({ password: newPassword })
+        .ilike('email', trimmedEmail);
+
+      await supabase.auth.signOut();
+      
       setSuccess(true);
     } catch (err) {
       setError(err.message);
@@ -874,7 +909,7 @@ function ForgotPasswordModal({ onClose, onOpenLogin }) {
             <img src="/stamp.png" alt="Stamp" className="w-14 h-14 object-contain" />
           </div>
           <h2 className="text-2xl font-extrabold text-slate-800">Reset Password</h2>
-          <p className="text-gray-500 text-sm mt-2">Enter your email to receive a reset link</p>
+          <p className="text-gray-500 text-sm mt-2">Verify your identity to create a new password</p>
         </div>
 
         {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4 text-center border border-red-100 font-medium">{error}</div>}
@@ -883,7 +918,7 @@ function ForgotPasswordModal({ onClose, onOpenLogin }) {
           <div className="text-center">
             <div className="bg-green-50 text-green-600 text-sm p-4 rounded-lg mb-6 border border-green-100 font-bold flex flex-col items-center gap-2">
               <CheckCircle size={24} className="mx-auto" />
-              Reset Link Sent! Check your email.
+              Password Successfully Changed!
             </div>
             <button onClick={() => { onClose(); onOpenLogin(); }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md shadow-blue-500/30 transition-all hover:scale-[1.02]">
               Return to Login
@@ -895,9 +930,17 @@ function ForgotPasswordModal({ onClose, onOpenLogin }) {
               <label className="block text-xs font-semibold text-slate-600 mb-1">Email Address</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@college.edu" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" required />
             </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Date of Birth</label>
+              <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-600" required />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">New Password</label>
+              <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" required />
+            </div>
             
             <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md shadow-blue-500/30 transition-all hover:scale-[1.02] mt-2 disabled:opacity-70 disabled:hover:scale-100">
-              {loading ? 'Sending...' : 'Send Reset Link \u2192'}
+              {loading ? 'Processing...' : 'Reset Password \u2192'}
             </button>
           </form>
         )}
