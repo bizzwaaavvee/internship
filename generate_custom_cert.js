@@ -42,7 +42,7 @@ async function createCustomCert() {
 
   const certId = 'Cert-' + Math.random().toString(36).substr(2, 9).toUpperCase();
   const studentId = 'Stud-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-  const created_at = new Date('2026-07-14T10:00:00Z').toISOString();
+  const created_at = new Date('2026-06-14T10:00:00Z').toISOString();
 
   console.log("Inserting record into registrations table...");
   const { error: dbError } = await supabase.from('registrations').upsert([
@@ -134,7 +134,7 @@ async function createCustomCert() {
   drawCenterText(fullDomain + " Virtual Internship", height - 545, helveticaBold, 20, primaryColor);
   
   // Custom Issue Date
-  const issueDate = "July 14, 2026";
+  const issueDate = "June 14, 2026";
   drawCenterText(`Issued on: ${issueDate}`, height - 580, helvetica, 16, textColor);
 
   // QR Code
