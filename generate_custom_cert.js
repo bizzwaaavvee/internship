@@ -128,7 +128,7 @@ async function createCustomCert() {
   
   drawCenterText(college, height - 460, helveticaBold, 20, primaryColor);
   
-  drawCenterText("has successfully completed 8-weeks", height - 505, helvetica, 16, textColor);
+  drawCenterText("has successfully completed 4-weeks", height - 505, helvetica, 16, textColor);
   
   const fullDomain = DOMAIN_MAP[domain] || domain;
   drawCenterText(fullDomain + " Virtual Internship", height - 545, helveticaBold, 20, primaryColor);

@@ -88,7 +88,7 @@ const generateCertificate = async (name, college, domain, certId, studentId) => 
     
     drawCenterText(college, height - 460, helveticaBold, 20, primaryColor);
     
-    drawCenterText("has successfully completed 8-weeks", height - 505, helvetica, 16, textColor);
+    drawCenterText("has successfully completed 4-weeks", height - 505, helvetica, 16, textColor);
     
     const fullDomain = DOMAIN_MAP[domain] || domain;
     drawCenterText(fullDomain + " Virtual Internship", height - 545, helveticaBold, 20, primaryColor);
@@ -200,13 +200,13 @@ function NotificationBanner({ onOpenRegister }) {
   const content = (
     <div className="flex items-center gap-8 shrink-0 pr-8">
       <div className="flex items-center gap-2 font-bold tracking-wide">
-          <span className="text-yellow-400">REGISTRATIONS CLOSED — Next Batch: 14th July 2026</span>
-          <span className="bg-gray-200 text-slate-800 px-3 py-1 rounded-full text-xs font-bold">Batch Full — THX-JUL26</span>
+          <span className="text-yellow-400">REGISTRATIONS OPEN — New Batch Starts Today!</span>
+          <span className="bg-green-200 text-green-800 px-3 py-1 rounded-full text-xs font-bold">New Batch — THX-JUL21</span>
       </div>
       <div className="flex items-center gap-4 font-medium">
-          <span>📅 Current batch is full! Next internship batch begins on 14th July.</span>
-          <button onClick={onOpenRegister} className="bg-gray-200 text-slate-800 px-4 py-1 rounded-full text-xs font-bold hover:bg-gray-300 transition-colors">
-              Registrations Closed
+          <span>📅 Enroll now! 4-week internship batch starts today.</span>
+          <button onClick={onOpenRegister} className="bg-green-500 text-white px-4 py-1 rounded-full text-xs font-bold hover:bg-green-600 transition-colors">
+              Apply Now
           </button>
       </div>
     </div>
@@ -238,7 +238,7 @@ function Hero({ onOpenRegister }) {
         </div>
         
         <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-          <span className="text-yellow-400 drop-shadow-md">8-Week Virtual Technical Internship</span> 2026 | Pan-India
+          <span className="text-yellow-400 drop-shadow-md">4-Week Virtual Technical Internship</span> 2026 | Pan-India
         </h1>
         
         <p className="text-lg md:text-xl text-blue-100 mb-10 max-w-3xl mx-auto font-medium">
@@ -247,12 +247,12 @@ function Hero({ onOpenRegister }) {
 
         <div className="inline-flex items-center gap-2 bg-blue-900/60 border border-blue-700/50 px-5 py-2 rounded-full text-sm font-medium mb-8">
             <Clock size={16} className="text-yellow-400" />
-            <span>Registrations Closed. Next Batch Starts: <strong>14th July 2026</strong></span>
+            <span>Registrations Open. New Batch Starts: <strong>21st July 2026</strong></span>
         </div>
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button onClick={onOpenRegister} className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-3.5 px-8 rounded-full shadow-md transition-all w-full sm:w-auto">
-            Registrations Closed
+          <button onClick={onOpenRegister} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-8 rounded-full shadow-md transition-all w-full sm:w-auto">
+            Apply Now
           </button>
           <button 
             onClick={() => document.getElementById('domains')?.scrollIntoView({ behavior: 'smooth' })}
@@ -475,7 +475,7 @@ function PopupModal({ onClose, onOpenRegister }) {
         <div className="text-5xl mb-4">🚀</div>
         <h2 className="text-2xl font-extrabold text-slate-800 mb-4">Ready to jumpstart your career?</h2>
         <p className="text-gray-600 mb-8">
-          Join 50,000+ students and get your <strong className="text-slate-800">8-Week Virtual Technical Internship</strong> and instant offer letter today!
+          Join 50,000+ students and get your <strong className="text-slate-800">4-Week Virtual Technical Internship</strong> and instant offer letter today!
         </p>
         <button onClick={onOpenRegister} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors mb-4 shadow-md shadow-blue-500/30">
           Register Now
@@ -488,18 +488,126 @@ function PopupModal({ onClose, onOpenRegister }) {
   );
 }
 function RegisterModal({ onClose, onOpenPolicy }) {
+  const [formData, setFormData] = useState({
+    full_name: '', email: '', mobile: '', dob: '', domain: '', password: ''
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      const { data, error } = await supabase.from('registrations').insert([
+        {
+          full_name: formData.full_name,
+          email: formData.email,
+          mobile_number: formData.mobile,
+          date_of_birth: formData.dob,
+          domain: formData.domain,
+          password: formData.password, // Keeping for schema compatibility
+          payment_status: 'pending'
+        }
+      ]).select().single();
+
+      if (error) {
+        console.error('Error inserting registration:', error);
+        if (error.code === '23505') {
+          alert("Registration Failed! This email or mobile number is already registered. Please log in instead.");
+        } else {
+          alert("Registration Failed! Error: " + error.message);
+        }
+        setLoading(false);
+        return;
+      }
+      
+      localStorage.setItem('registeredEmail', formData.email);
+      localStorage.setItem('registeredName', formData.full_name);
+      localStorage.setItem('registeredDomain', formData.domain);
+      
+      window.location.href = ROUTES.ONBOARDING;
+    } catch (err) {
+      console.error(err);
+      alert("Registration Failed: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto pt-20 pb-20">
-      <div className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 max-w-md w-full relative animate-[fade-in_0.3s_ease-out] my-auto text-center">
+      <div className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 max-w-md w-full relative animate-[fade-in_0.3s_ease-out] my-auto">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-800 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">&times;</button>
-        <div className="w-20 h-20 mx-auto bg-red-50 rounded-full flex items-center justify-center mb-4 overflow-hidden border border-red-100">
-           <span className="text-3xl">🛑</span>
+        
+        <div className="text-center mb-6">
+          <div className="w-20 h-20 mx-auto bg-blue-50 rounded-full flex items-center justify-center mb-4 overflow-hidden border border-blue-100">
+            <img src="/stamp.png" alt="Stamp" className="w-14 h-14 object-contain" />
+          </div>
+          <h2 className="text-2xl font-extrabold text-slate-800">Internship Selection<br/>2026</h2>
+          <p className="text-gray-500 text-sm mt-2">Apply for your 4-Week Virtual Technical Internship at Thiranix</p>
         </div>
-        <h2 className="text-2xl font-extrabold text-slate-800 mb-2">Registrations Closed</h2>
-        <p className="text-gray-600 mb-6">All slots for the current batch are full. New internships will begin on <strong>14th July 2026</strong>.</p>
-        <button onClick={onClose} className="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-lg shadow-md transition-all">
-          Got it
-        </button>
+
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-3 mb-6">
+          <div className="w-5 h-5 rounded-full bg-green-400 flex items-center justify-center text-white font-bold text-xs shrink-0 mt-0.5">!</div>
+          <div>
+            <p className="text-sm font-bold text-green-800">New Batch Starts Today!</p>
+            <p className="text-xs text-green-600">Enrolling for the 4-week batch from 21st July 2026</p>
+          </div>
+        </div>
+
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Full Name</label>
+            <input type="text" value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} placeholder="Enter your full name" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" required />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Email Address</label>
+            <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="name@college.edu" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" required />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Password</label>
+            <input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} placeholder="Create a password" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" required />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Mobile Number</label>
+            <input type="tel" value={formData.mobile} onChange={e => setFormData({...formData, mobile: e.target.value})} placeholder="10-digit mobile number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all" required />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Date of Birth</label>
+            <input type="date" value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-600" required />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1">Select Domain</label>
+            <select value={formData.domain} onChange={e => setFormData({...formData, domain: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-600" required>
+              <option value="" disabled>Choose your track...</option>
+              <option value="fsd">Full Stack Development</option>
+              <option value="vlsi">Embedded System Development</option>
+              <option value="cpp">C++ Programming</option>
+              <option value="cyber">Cyber Security</option>
+              <option value="da">Data Analytics</option>
+              <option value="ds">Data Science</option>
+              <option value="uiux">UI/UX Designing</option>
+              <option value="web">Web Development</option>
+            </select>
+          </div>
+          
+          <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md shadow-blue-500/30 transition-all hover:scale-[1.02] mt-2 disabled:opacity-70">
+            {loading ? 'Processing...' : 'Submit Registration \u2192'}
+          </button>
+        </form>
+
+        <p className="text-center text-xs text-gray-500 mt-6">
+          By clicking submit, you agree to our <button onClick={onOpenPolicy} className="text-blue-600 font-semibold hover:underline">Terms and Privacy Policy</button>
+        </p>
       </div>
     </div>
   );
@@ -1334,7 +1442,7 @@ function OnboardingPage() {
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">Internship Domain Duration</label>
               <select disabled className="w-full bg-gray-100 border border-slate-200 rounded-lg px-4 py-2.5 text-sm text-gray-500 opacity-70 cursor-not-allowed">
-                <option>8-Week Virtual Technical Internship (Locked)</option>
+                <option>4-Week Virtual Technical Internship (Locked)</option>
               </select>
             </div>
 
