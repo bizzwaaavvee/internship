@@ -87,10 +87,17 @@ app.post('/api/verify-payment', (req, res) => {
 });
 
 // Serve static files from the Vite build directory
-app.use(express.static(path.join(__dirname, '../dist')));
+app.use(express.static(path.join(__dirname, '../dist'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  }
+}));
 
 // Fallback to index.html for React Router
 app.get(/.*/, (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
