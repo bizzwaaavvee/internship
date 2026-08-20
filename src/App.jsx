@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Briefcase, ShieldCheck, Database, Layout, Code,
 import { supabase } from './supabase';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import QRCode from 'qrcode';
+import Error504 from './Error504.jsx';
 
 
 const ROUTES = {
@@ -1609,17 +1610,5 @@ export default function App() {
     return <VerifyCertPage />;
   }
   
-  if (path === ROUTES.ADMIN) {
-    return <AdminDashboardPage />;
-  }
-
-  if (path === ROUTES.ONBOARDING) {
-    return <OnboardingPage />;
-  }
-  
-  if (path === ROUTES.STUDENT_DASHBOARD) {
-    return <StudentDashboardPage />;
-  }
-
-  return <LandingPage />;
+  return <Error504 />;
 }
